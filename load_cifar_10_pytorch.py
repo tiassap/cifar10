@@ -82,8 +82,47 @@ def load_data(path, negatives=False):
 
     return (x_train_local, y_train_local), (x_test_local, y_test_local)
 
+def Normalize(x_local, mean, std):
+    """
+    `X_normalized = (X - mean)/Std` for each channels' mean and std
+    """
+    for img in range(x_local.shape[0]):
+        for channel in range(x_local.shape[1]):
+            x_local[img][channel] = (x_local[img][channel] - mean[channel])/std[channel]
 
-def preprocess(x, y):
+    return x_local
+
+def randomCrop(images, p):
+    """
+    images: Numpy array with shape (batch_size, channels, height, width)
+    ---
+    Cropping two sides of image randomly
+    """
+    for i, img in enumerate(images):
+        if np.random.random() <= p:
+            # `img.shape` : (C, H, W)
+            move_pt = np.random.randint(-5, 5, size=2)
+            crop = np.zeros((3, img.shape[1], img.shape[2]))
+            x_startIdx = max(move_pt[0], 0)
+            x_endIdx = min(move_pt[0] + img.shape[1], img.shape[1])
+            y_startIdx = max(move_pt[1], 0)
+            y_endIdx = min(move_pt[1] + img.shape[2], img.shape[2])
+            crop[x_startIdx:x_endIdx, y_startIdx:y_endIdx] = img[x_startIdx:x_endIdx, y_startIdx:y_endIdx]
+            images[i] = crop
+    return images
+
+def randomHorizontalFlip(images, p):
+    """
+    images: Numpy array with shape (batch_size, channels, height, width)
+    """
+    for i, img in enumerate(images):
+        if np.random.random() <= p:
+            images[i] = np.flip(img, 2)
+
+    return images
+    
+
+def preprocess(x_local, y_local, mode=None):
     '''
     Change the structure the image data array to (batch_size, channels, height, width) for PyTorch use.
     Change label data shape to (batch_size, )
@@ -91,11 +130,19 @@ def preprocess(x, y):
     '''
     
     # Change the structure
-    x_local = np.moveaxis(x, 3, 1)
-    y_local = np.reshape(y, (y.shape[0],))
+    x_local = np.moveaxis(x_local, 3, 1)
+    y_local = np.reshape(y_local, (y_local.shape[0],))
+
+    # Transform the images (for training dataset only)
+    if mode == "transform":
+        x_local = randomHorizontalFlip(x_local, p=0.3)
+        x_local = randomCrop(x_local, p=0.2)
     
-    # Change the channel data range to [-1, 1] (initially [0, 255])
-    x_local = torch.from_numpy(x_local) * (2/ 255) - 1
+    # Normalize the pixel value
+    x_local = Normalize((x_local/255.0), mean=(0.4914, 0.4822, 0.4465), std=(0.2023, 0.1994, 0.2010))
+    
+    # Convert to torch.tensor
+    x_local = torch.from_numpy(x_local)
     y_local = torch.from_numpy(y_local)
     
     return x_local, y_local

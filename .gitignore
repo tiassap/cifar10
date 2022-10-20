@@ -1,0 +1,7 @@
+cifar-10-batches-py/
+
+dummy*
+
+plot.png
+output
+trained_model.pt
