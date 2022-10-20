@@ -1,6 +1,6 @@
 # Image classification on CIFAR-10 dataset
 
-Home-made image classification training and inference script. No torchvision / cv2 included.
+Home-made image classification training and inference script.
 
 **Training**
 ```bash
@@ -9,6 +9,7 @@ python CIFAR-10_main.py
 Will resume training if trained model file `trained_model.pt` and loss/acc list binary `output` exist.
 
 **Inference**
+Need to have `trained_model.pt` on root folder.
 ```bash
 python inference.py
 ```
